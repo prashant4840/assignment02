@@ -1,87 +1,43 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
-#include <termios.h>
 #include <time.h>
-#include <fcntl.h>
+#include <conio.h>     // Windows: kbhit(), getch()
+#include <windows.h>   // Sleep()
 
-// ----------------------------------------------------
-// POSIX kbhit() and getch()
-// ----------------------------------------------------
-
-int kbhit(void) {
-    struct termios oldt, newt;
-    int ch;
-    int oldf;
-
-    tcgetattr(STDIN_FILENO, &oldt);
-    newt = oldt;
-    newt.c_lflag &= ~(ICANON | ECHO);
-    tcsetattr(STDIN_FILENO, TCSANOW, &newt);
-
-    oldf = fcntl(STDIN_FILENO, F_GETFL, 0);
-    fcntl(STDIN_FILENO, F_SETFL, oldf | O_NONBLOCK);
-
-    ch = getchar();
-
-    tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
-    fcntl(STDIN_FILENO, F_SETFL, oldf);
-
-    if (ch != EOF) {
-        ungetc(ch, stdin);
-        return 1;
-    }
-    return 0;
+// Clear screen (Windows)
+void clearScreen() {
+    system("cls");
 }
-
-int getch(void) {
-    struct termios oldt, newt;
-    int ch;
-
-    tcgetattr(STDIN_FILENO, &oldt);
-    newt = oldt;
-    newt.c_lflag &= ~(ICANON | ECHO);
-    tcsetattr(STDIN_FILENO, TCSANOW, &newt);
-
-    ch = getchar();
-
-    tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
-    return ch;
-}
-
-// ----------------------------------------------------
-// MAIN GAME
-// ----------------------------------------------------
 
 int main() {
-    srand(time(0));
+    srand((unsigned)time(NULL));
 
-    int x = 1;                     // player lane (0–2)
-    int step = 0;                  // falling obstacle row
+    int x = 1;                      // Player lane (0–2)
+    int step = 0;                  // Falling obstacle row
     int obstaclePos = rand() % 3;  // 0, 1, or 2
 
-    int score = 0;                 // NEW FEATURE
-    int lives = 3;                 // NEW FEATURE
-    int speed = 120000;            // NEW FEATURE (difficulty adjuster)
+    int score = 0;
+    int lives = 3;
+    int speed = 120;               // Sleep in milliseconds
 
     while (1) {
 
         // INPUT
-        if (kbhit()) {
-            char ch = getch();
+        if (_kbhit()) {
+            char ch = _getch();
 
             if ((ch == 'a' || ch == 'A') && x > 0) x--;
             if ((ch == 'd' || ch == 'D') && x < 2) x++;
         }
 
         // CLEAR SCREEN
-        printf("\033[2J\033[1;1H");
+        clearScreen();
 
-        // HUD DISPLAY
+        // HUD
         printf("Score: %d   Lives: %d\n", score, lives);
         printf("|--- --- ---|\n");
 
-        // DRAW GAME FIELD
+        // GAME FIELD
         for (int i = 0; i < 10; i++) {
             if (i == step) {
 
@@ -97,7 +53,7 @@ int main() {
             }
         }
 
-        // DRAW PLAYER
+        // PLAYER
         if (x == 0)
             printf("| A        |\n");
         else if (x == 1)
@@ -114,19 +70,19 @@ int main() {
                     break;
                 }
             } else {
-                score++;   // NEW: gain score for dodging
+                score++;
             }
         }
 
-        // DIFFICULTY INCREASE EVERY 5 POINTS
-        if (score > 0 && score % 5 == 0 && speed > 50000) {
-            speed -= 5000;
+        // INCREASE DIFFICULTY
+        if (score > 0 && score % 5 == 0 && speed > 50) {
+            speed -= 5;
         }
 
-        // FRAME DELAY
-        usleep(speed);
+        // FRAME DELAY (Windows)
+        Sleep(speed);
 
-        // MOVE OBSTACLE DOWN
+        // MOVE OBSTACLE
         step++;
 
         // RESET OBSTACLE
