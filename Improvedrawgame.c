@@ -4,7 +4,7 @@
 #include <conio.h>     // Windows: kbhit(), getch()
 #include <windows.h>   // Sleep()
 
-// Clear screen (Windows)
+
 void clearScreen() {
     system("cls");
 }
